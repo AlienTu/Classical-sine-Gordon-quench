@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Closed-loop sine-Gordon simulator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <h1>Closed-loop sine-Gordon</h1>
+      <p class="subtitle">Browser demo for the periodic sine-Gordon equation with a Gaussian initial velocity pulse.</p>
+
+      <div class="controls">
+        <div class="row buttons">
+          <button id="playPauseBtn">Play</button>
+          <button id="resetBtn" class="secondary">Reset</button>
+        </div>
+        <div class="row buttons">
+          <button id="successPresetBtn" class="success">Success preset</button>
+          <button id="failPresetBtn" class="warning">Fail preset</button>
+        </div>
+
+        <div class="control"><label for="B">B</label><span id="BValue"></span><input id="B" type="range" min="0" max="7" step="0.1" value="4.5" /></div>
+        <div class="control"><label for="sigma">sigma</label><span id="sigmaValue"></span><input id="sigma" type="range" min="0.5" max="6" step="0.1" value="1.5" /></div>
+        <div class="control"><label for="L">L</label><span id="LValue"></span><input id="L" type="range" min="40" max="180" step="1" value="120" /></div>
+        <div class="control"><label for="N">N</label><span id="NValue"></span><input id="N" type="range" min="160" max="1000" step="20" value="400" /></div>
+        <div class="control"><label for="dt">dt</label><span id="dtValue"></span><input id="dt" type="range" min="0.005" max="0.04" step="0.001" value="0.02" /></div>
+        <div class="control"><label for="substeps">substeps</label><span id="substepsValue"></span><input id="substeps" type="range" min="1" max="12" step="1" value="4" /></div>
+
+        <div class="control">
+          <label for="viewMode">View</label>
+          <select id="viewMode">
+            <option value="both">phi + energy</option>
+            <option value="phi">only phi</option>
+            <option value="energy">only energy</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="status">
+        <div><strong>time:</strong> <span id="timeReadout">0.00</span></div>
+        <div><strong>energy:</strong> <span id="energyReadout">0.0000</span></div>
+        <div><strong>dx:</strong> <span id="dxReadout">0.0000</span></div>
+        <div><strong>pair signal:</strong> <span id="pairReadout">none</span></div>
+        <div><strong>message:</strong> <span id="messageReadout">initialized</span></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <canvas id="simCanvas" width="1100" height="700"></canvas>
+    </main>
+  </div>
+
+  <script src="sim.js"></script>
+</body>
+</html>
