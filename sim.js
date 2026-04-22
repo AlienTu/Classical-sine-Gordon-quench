@@ -24,6 +24,9 @@ const els = {
   messageReadout: document.getElementById('messageReadout')
 };
 
+const TWO_PI = 2 * Math.PI;
+const PHI_PADDING = 1.0;
+
 const ctx = els.canvas.getContext('2d');
 let running = false;
 let sim = null;
@@ -51,6 +54,52 @@ function syncLabels() {
   els.substepsValue.textContent = p.substeps.toFixed(0);
 }
 
+function initializePhiSectorWindow(phi) {
+  let minPhi = Infinity;
+  let maxPhi = -Infinity;
+  for (let i = 0; i < phi.length; i++) {
+    minPhi = Math.min(minPhi, phi[i]);
+    maxPhi = Math.max(maxPhi, phi[i]);
+  }
+  const smin = Math.floor(minPhi / TWO_PI);
+  const smax = Math.floor(maxPhi / TWO_PI);
+  return { smin, smax };
+}
+
+function updatePhiSectorWindow() {
+  let minPhi = Infinity;
+  let maxPhi = -Infinity;
+  for (let i = 0; i < sim.phi.length; i++) {
+    minPhi = Math.min(minPhi, sim.phi[i]);
+    maxPhi = Math.max(maxPhi, sim.phi[i]);
+  }
+  const currentYMin = TWO_PI * sim.phiSectorWindow.smin - PHI_PADDING;
+  const currentYMax = TWO_PI * (sim.phiSectorWindow.smax + 1) + PHI_PADDING;
+
+  if (minPhi < currentYMin || maxPhi > currentYMax) {
+    const newSMin = Math.floor(minPhi / TWO_PI);
+    const newSMax = Math.floor(maxPhi / TWO_PI);
+    sim.phiSectorWindow.smin = Math.min(sim.phiSectorWindow.smin, newSMin);
+    sim.phiSectorWindow.smax = Math.max(sim.phiSectorWindow.smax, newSMax);
+  }
+}
+
+function getPhiAxisBounds() {
+  updatePhiSectorWindow();
+  return {
+    ymin: TWO_PI * sim.phiSectorWindow.smin - PHI_PADDING,
+    ymax: TWO_PI * (sim.phiSectorWindow.smax + 1) + PHI_PADDING
+  };
+}
+
+function getPhiSectorLines() {
+  const lines = [];
+  for (let n = sim.phiSectorWindow.smin; n <= sim.phiSectorWindow.smax + 1; n++) {
+    lines.push(n * TWO_PI);
+  }
+  return lines;
+}
+
 function initialize() {
   const p = params();
   const dx = p.L / p.N;
@@ -61,7 +110,15 @@ function initialize() {
     x[i] = -p.L / 2 + i * dx;
     pi[i] = p.B * Math.exp(-((x[i] / p.sigma) ** 2));
   }
-  sim = { ...p, dx, x, phi, pi, t: 0 };
+  sim = {
+    ...p,
+    dx,
+    x,
+    phi,
+    pi,
+    t: 0,
+    phiSectorWindow: initializePhiSectorWindow(phi)
+  };
   updateReadout('initialized');
   draw();
 }
@@ -162,7 +219,7 @@ function updateReadout(message) {
   els.messageReadout.textContent = message;
 }
 
-function drawAxes(x0, y0, w, h, ymin, ymax, title, dashed=[]) {
+function drawAxes(x0, y0, w, h, ymin, ymax, title, dashed = []) {
   ctx.strokeStyle = '#cbd5e1';
   ctx.lineWidth = 1;
   ctx.strokeRect(x0, y0, w, h);
@@ -176,8 +233,9 @@ function drawAxes(x0, y0, w, h, ymin, ymax, title, dashed=[]) {
   ctx.fillText((-sim.L / 2).toFixed(0), x0 - 4, y0 + h + 18);
   ctx.fillText((sim.L / 2).toFixed(0), x0 + w - 24, y0 + h + 18);
   dashed.forEach((yVal) => {
+    if (yVal < ymin || yVal > ymax) return;
     const yy = y0 + h - ((yVal - ymin) / (ymax - ymin)) * h;
-    ctx.setLineDash([6,6]);
+    ctx.setLineDash([6, 6]);
     ctx.strokeStyle = '#94a3b8';
     ctx.beginPath();
     ctx.moveTo(x0, yy);
@@ -212,8 +270,9 @@ function draw() {
   const plotW = els.canvas.width - 2 * pad;
   const ed = energyDensity();
   if (mode === 'phi' || mode === 'both') {
-    drawAxes(pad, pad, plotW, panelH, -1, 7.2, 'Field profile phi(x,t)', [0, 2 * Math.PI]);
-    drawCurve(sim.phi, pad, pad, plotW, panelH, -1, 7.2, '#2563eb');
+    const phiBounds = getPhiAxisBounds();
+    drawAxes(pad, pad, plotW, panelH, phiBounds.ymin, phiBounds.ymax, 'Field profile phi(x,t)', getPhiSectorLines());
+    drawCurve(sim.phi, pad, pad, plotW, panelH, phiBounds.ymin, phiBounds.ymax, '#2563eb');
   }
   if (mode === 'energy' || mode === 'both') {
     const y0 = mode === 'both' ? pad + panelH + gap : pad;
@@ -258,13 +317,16 @@ els.playPauseBtn.addEventListener('click', () => {
   els.playPauseBtn.textContent = running ? 'Pause' : 'Play';
   updateReadout(running ? 'running' : 'paused');
 });
+
 els.resetBtn.addEventListener('click', () => {
   running = false;
   els.playPauseBtn.textContent = 'Play';
   initialize();
 });
+
 els.successPresetBtn.addEventListener('click', () => applyPreset('success'));
 els.failPresetBtn.addEventListener('click', () => applyPreset('fail'));
+
 [els.B, els.sigma, els.L, els.N, els.dt, els.substeps, els.viewMode].forEach(el => {
   el.addEventListener('input', () => {
     syncLabels();
