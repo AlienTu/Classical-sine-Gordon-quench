@@ -54,33 +54,26 @@ function syncLabels() {
   els.substepsValue.textContent = p.substeps.toFixed(0);
 }
 
-function initializePhiSectorWindow(phi) {
+function computeCurrentPhiSectors(phi) {
   let minPhi = Infinity;
   let maxPhi = -Infinity;
   for (let i = 0; i < phi.length; i++) {
     minPhi = Math.min(minPhi, phi[i]);
     maxPhi = Math.max(maxPhi, phi[i]);
   }
-  const smin = Math.floor(minPhi / TWO_PI);
-  const smax = Math.floor(maxPhi / TWO_PI);
-  return { smin, smax };
+  return {
+    smin: Math.floor(minPhi / TWO_PI),
+    smax: Math.floor(maxPhi / TWO_PI)
+  };
 }
 
 function updatePhiSectorWindow() {
-  let minPhi = Infinity;
-  let maxPhi = -Infinity;
-  for (let i = 0; i < sim.phi.length; i++) {
-    minPhi = Math.min(minPhi, sim.phi[i]);
-    maxPhi = Math.max(maxPhi, sim.phi[i]);
-  }
-  const currentYMin = TWO_PI * sim.phiSectorWindow.smin - PHI_PADDING;
-  const currentYMax = TWO_PI * (sim.phiSectorWindow.smax + 1) + PHI_PADDING;
-
-  if (minPhi < currentYMin || maxPhi > currentYMax) {
-    const newSMin = Math.floor(minPhi / TWO_PI);
-    const newSMax = Math.floor(maxPhi / TWO_PI);
-    sim.phiSectorWindow.smin = Math.min(sim.phiSectorWindow.smin, newSMin);
-    sim.phiSectorWindow.smax = Math.max(sim.phiSectorWindow.smax, newSMax);
+  const current = computeCurrentPhiSectors(sim.phi);
+  if (
+    current.smin !== sim.phiSectorWindow.smin ||
+    current.smax !== sim.phiSectorWindow.smax
+  ) {
+    sim.phiSectorWindow = current;
   }
 }
 
@@ -117,7 +110,7 @@ function initialize() {
     phi,
     pi,
     t: 0,
-    phiSectorWindow: initializePhiSectorWindow(phi)
+    phiSectorWindow: computeCurrentPhiSectors(phi)
   };
   updateReadout('initialized');
   draw();
